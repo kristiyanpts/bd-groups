@@ -1,9 +1,9 @@
 fx_version "cerulean"
 
-description "Basic React (TypeScript) & Lua Game Scripts Boilerplate"
-author "Project Error"
+description "FiveM Player Groups System that supports both just the ui itself or integrated into a phone system of yours."
+author "Bulgar Development"
 version '1.0.0'
-repository 'https://github.com/project-error/fivem-react-boilerplate-lua'
+repository 'https://github.com/kristiyanpts/bd-groups'
 
 lua54 'yes'
 
@@ -14,10 +14,15 @@ games {
 
 ui_page 'web/build/index.html'
 
+shared_sripts {
+  '@ox_lib/init.lua',
+  "shared/*.lua"
+}
+
 client_script "client/**/*"
 server_script "server/**/*"
 
 files {
-	'web/build/index.html',
-	'web/build/**/*',
+  'web/build/index.html',
+  'web/build/**/*',
 }
