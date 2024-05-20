@@ -1,5 +1,4 @@
--- * Credit to - https://github.com/Project-Sloth/ps-playergroups
-
+local Core = exports["qb-core"]:GetCoreObject()
 local Groups = {}
 local Players = {}
 local Requests = {}
@@ -13,7 +12,10 @@ local notification = {
 }
 
 local function formatCharacterName(playerSource)
-    local firstName, lastName = GetCharacterName(playerSource)
+    local Player = Core.Functions.GetPlayer(playerSource)
+    if not Player then return end
+
+    local firstName, lastName = Player.PlayerData.charinfo.firstname, Player.PlayerData.charinfo.lastname
 
     return firstName .. " " .. lastName
 end
@@ -109,7 +111,7 @@ local function setJobStatus(groupId, status)
     if not m then return end
 
     for i = 1, #m do
-        TriggerClientEvent("yseries:client:groups:update-job-stage", m[i], status)
+        TriggerClientEvent("bd-groups:client:groups:update-job-stage", m[i], status)
     end
 end
 
@@ -131,12 +133,12 @@ local function changeGroupLeader(groupId)
     end
 
     if leader ~= 0 then
-        TriggerClientEvent("yseries:client:groups:update-leader", leader)
+        TriggerClientEvent("bd-groups:client:groups:update-leader", leader)
 
         notification.data = {
             label = 'promotedToLeader',
         }
-        TriggerClientEvent('yseries:client:send-notification', leader,
+        TriggerClientEvent('bd-groups:client:send-notification', leader,
             notification)
     end
 
@@ -149,7 +151,7 @@ local function updateGroupData(groupId)
     if members == nil then return end
 
     for i = 1, #members do
-        TriggerClientEvent("yseries:client:groups:update-group-data", members[i])
+        TriggerClientEvent("bd-groups:client:groups:update-group-data", members[i])
     end
 end
 
@@ -172,10 +174,10 @@ local function destroyGroup(groupId)
 
     removeGroupMembers(groupId)
     for i = 1, #m do
-        TriggerClientEvent("yseries:client:groups:group-destroy", m[i])
+        TriggerClientEvent("bd-groups:client:groups:group-destroy", m[i])
     end
 
-    TriggerClientEvent('yseries:client:groups:refresh-feed', -1)
+    TriggerClientEvent('bd-groups:client:groups:refresh-feed', -1)
 
     Groups[groupId] = nil
 end
@@ -190,7 +192,7 @@ local function createBlipForGroup(groupId, name, data)
     if not members then return end
 
     for i = 1, #members do
-        TriggerClientEvent("yseries:client:groups:create-blip", members[i], name, data)
+        TriggerClientEvent("bd-groups:client:groups:create-blip", members[i], name, data)
     end
 end
 
@@ -205,7 +207,7 @@ local function removeBlipForGroup(groupId, name)
     if not members then return end
 
     for i = 1, #members do
-        TriggerClientEvent("yseries:client:groups:remove-blip", members[i], name)
+        TriggerClientEvent("bd-groups:client:groups:remove-blip", members[i], name)
     end
 end
 
@@ -284,7 +286,7 @@ local function removePlayerFromGroup(playerSource, groupId)
 
                     updateGroupData(groupId)
 
-                    TriggerEvent("yseries:server:groups:player-left", playerSource, true, groupId)
+                    TriggerEvent("bd-groups:server:groups:player-left", playerSource, true, groupId)
                 else
                     Players[playerSource] = nil
                     destroyGroup(groupId)
@@ -294,9 +296,9 @@ local function removePlayerFromGroup(playerSource, groupId)
                     if playerSource == v then
                         table.remove(Groups[groupId]["members"]["helpers"], k)
 
-                        TriggerClientEvent('yseries:client:groups:group-destroy', v)
+                        TriggerClientEvent('bd-groups:client:groups:group-destroy', v)
 
-                        TriggerEvent("yseries:server:groups:player-left", playerSource, true, groupId)
+                        TriggerEvent("bd-groups:server:groups:player-left", playerSource, true, groupId)
 
                         Players[playerSource] = nil
                     end
@@ -318,7 +320,7 @@ local function notifyGroup(groupId, message, timeout)
     notification.data = nil
 
     for i = 1, #members do
-        TriggerClientEvent('yseries:client:send-notification', members[i], notification)
+        TriggerClientEvent('bd-groups:client:send-notification', members[i], notification)
     end
 end
 
@@ -343,14 +345,14 @@ end)
 -- * ^ NET EVENTS ^ * --
 
 -- Leave the speicifed group.
-RegisterNetEvent('yseries:server:groups:leave', function(groupId)
+RegisterNetEvent('bd-groups:server:groups:leave', function(groupId)
     local src = source
     removePlayerFromGroup(src, groupId)
 end)
 
 -- Destroy a group object.
 -- This is called when the leader leaves the group.
-RegisterServerEvent("yseries:server:groups:destroy", function()
+RegisterServerEvent("bd-groups:server:groups:destroy", function()
     local src = source
     local g = findGroupByMember(src)
 
@@ -364,7 +366,7 @@ end)
 -- * ^ NET EVENTS ^ * --
 
 -- * ^ CALLBACKS  ^ * --
-lib.callback.register('yseries:server:groups:get', function(src, groupId)
+lib.callback.register('bd-groups:server:groups:get', function(src, groupId)
     local group = Groups[groupId]
     if not group then return nil end
 
@@ -393,7 +395,7 @@ lib.callback.register('yseries:server:groups:get', function(src, groupId)
     return groupData
 end)
 
-lib.callback.register('yseries:server:groups:get-members', function(_, groupId)
+lib.callback.register('bd-groups:server:groups:get-members', function(_, groupId)
     local groupMembers = {}
     local members = getGroupMembers(groupId)
     if members == nil then return end
@@ -406,7 +408,7 @@ lib.callback.register('yseries:server:groups:get-members', function(_, groupId)
 end)
 
 -- Player sends a requested asking the server if they can create a group.
-lib.callback.register('yseries:server:groups:request-create', function(src, groupName)
+lib.callback.register('bd-groups:server:groups:request-create', function(src, groupName)
     if not Players[src] then
         Players[src] = true
 
@@ -423,7 +425,7 @@ lib.callback.register('yseries:server:groups:request-create', function(src, grou
 
         GroupData[groupId] = {}
 
-        TriggerClientEvent('yseries:client:groups:refresh-feed', -1)
+        TriggerClientEvent('bd-groups:client:groups:refresh-feed', -1)
 
         return { groupId = groupId, name = formatCharacterName(src), playerSource = src }
     else
@@ -433,7 +435,7 @@ lib.callback.register('yseries:server:groups:request-create', function(src, grou
 end)
 
 -- Get all active groups currently in the server.
-lib.callback.register('yseries:server:groups:get-active', function(_)
+lib.callback.register('bd-groups:server:groups:get-active', function(_)
     local activeGroups = {}
     for k, v in pairs(Groups) do
         if Groups[k] ~= nil then
@@ -453,14 +455,14 @@ lib.callback.register('yseries:server:groups:get-active', function(_)
     return activeGroups
 end)
 
-lib.callback.register('yseries:server:groups:request-join', function(src, groupId)
+lib.callback.register('bd-groups:server:groups:request-join', function(src, groupId)
     local group = Groups[groupId]
     if not group then return end
 
     local lead = Groups[groupId]["members"]["leader"]
     if not Players[src] then
         if Groups[groupId] then
-            if #Groups[groupId]["members"] < Config.GroupMembersLimit then
+            if #Groups[groupId]["members"]["helpers"] + 1 < Config.MaxMembers then
                 if Requests[groupId] == nil then
                     Requests[groupId] = {}
                 end
@@ -471,7 +473,7 @@ lib.callback.register('yseries:server:groups:request-join', function(src, groupI
                     label = 'joinRequest',
                 }
 
-                TriggerClientEvent('yseries:client:send-notification', lead,
+                TriggerClientEvent('bd-groups:client:send-notification', lead,
                     notification)
 
                 return { success = true }
@@ -488,7 +490,7 @@ lib.callback.register('yseries:server:groups:request-join', function(src, groupI
     end
 end)
 
-lib.callback.register("yseries:server:groups:accept-join", function(_, data)
+lib.callback.register("bd-groups:server:groups:accept-join", function(_, data)
     local groupId = data.groupId
     local playerId = data.playerId
 
@@ -502,10 +504,10 @@ lib.callback.register("yseries:server:groups:accept-join", function(_, data)
         notification.data = {
             label = 'requestAccepted',
         }
-        TriggerClientEvent('yseries:client:send-notification', playerId,
+        TriggerClientEvent('bd-groups:client:send-notification', playerId,
             notification)
 
-        TriggerClientEvent("yseries:client:groups:join", playerId, groupId)
+        TriggerClientEvent("bd-groups:client:groups:join", playerId, groupId)
 
         updateGroupData(groupId)
 
@@ -515,7 +517,7 @@ lib.callback.register("yseries:server:groups:accept-join", function(_, data)
     return false
 end)
 
-lib.callback.register("yseries:server:groups:deny-join", function(_, data)
+lib.callback.register("bd-groups:server:groups:deny-join", function(_, data)
     local groupId = data.groupId
     local playerId = data.playerId
 
@@ -528,27 +530,29 @@ lib.callback.register("yseries:server:groups:deny-join", function(_, data)
     notification.data = {
         label = 'joinDenied',
     }
-    TriggerClientEvent('yseries:client:send-notification', playerId,
+    TriggerClientEvent('bd-groups:client:send-notification', playerId,
         notification)
 
-    TriggerClientEvent('yseries:client:groups:remove-pending-join', playerId, groupId)
+    TriggerClientEvent('bd-groups:client:groups:remove-pending-join', playerId, groupId)
+
+    return true
 end)
 
-lib.callback.register("yseries:server:groups:kick-member", function(_, playerId, groupId)
+lib.callback.register("bd-groups:server:groups:kick-member", function(_, playerId, groupId)
     removePlayerFromGroup(playerId, groupId)
 
     notification.data = {
         label = 'kicked',
     }
-    TriggerClientEvent('yseries:client:send-notification', playerId,
+    TriggerClientEvent('bd-groups:client:send-notification', playerId,
         notification)
 
-    TriggerClientEvent('yseries:client:groups:get-remove-from-group', playerId)
+    TriggerClientEvent('bd-groups:client:groups:get-remove-from-group', playerId)
 
     updateGroupData(groupId)
 end)
 
-lib.callback.register("yseries:server:groups:get-requests", function(_, groupId)
+lib.callback.register("bd-groups:server:groups:get-requests", function(_, groupId)
     local requests = {}
     if Requests[groupId] then
         for _, v in pairs(Requests[groupId]) do

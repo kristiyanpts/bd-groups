@@ -3,6 +3,10 @@ import "./App.css";
 import { debugData } from "../utils/debugData";
 import { isEnvBrowser } from "../utils/misc";
 import { fetchNui } from "../utils/fetchNui";
+import { Route, Routes, useNavigate } from "react-router-dom";
+import Groups from "./Groups/Groups";
+import MyGroup from "./MyGroup/MyGroup";
+import { useNuiEvent } from "../hooks/useNuiEvent";
 
 debugData([
   {
@@ -13,20 +17,35 @@ debugData([
 
 const App = () => {
   const [isPhone, setIsPhone] = useState(false);
+  const navigate = useNavigate();
+
+  useNuiEvent("joinAccepted", () => {
+    navigate("/group");
+  });
 
   useEffect(() => {
-    document.getElementsByTagName("html")[0].style.visibility = "visible";
-    document.getElementsByTagName("body")[0].style.visibility = "visible";
+    fetchNui("fetchGroupStatus", {}, false).then((groupStatus) => {
+      if (groupStatus) {
+        navigate("/group");
+      } else {
+        navigate("/");
+      }
+    });
 
     if (!isEnvBrowser()) {
       // TODO: Get config if is phone or just UI
     }
-  }, []);
+  }, [navigate]);
 
   return (
     <div className={!isPhone ? "default-wrapper" : ""}>
       <div className="app">
-        <div className="app-wrapper"></div>
+        <div className="app-wrapper">
+          <Routes>
+            <Route path="/" element={<Groups />}></Route>
+            <Route path="/group" element={<MyGroup />}></Route>
+          </Routes>
+        </div>
       </div>
     </div>
   );

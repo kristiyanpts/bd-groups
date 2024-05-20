@@ -14,7 +14,7 @@ games {
 
 ui_page 'web/build/index.html'
 
-shared_sripts {
+shared_scripts {
   '@ox_lib/init.lua',
   "shared/*.lua"
 }

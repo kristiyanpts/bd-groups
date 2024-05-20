@@ -1,0 +1,134 @@
+.groupsTitle {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.groupsContainer {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  .noGroups {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    color: lightgray;
+    font-size: 20px;
+  }
+}
+
+.groupsContainer::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.groupsContainer {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.group {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: rgb(30, 30, 31);
+  height: fit-content;
+
+  .title {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .description {
+    display: flex;
+    font-size: 18px;
+    display: flex;
+    gap: 3px;
+    align-items: center;
+
+    i {
+      font-size: 16px;
+      color: lightgray;
+    }
+  }
+
+  .button {
+    position: absolute;
+    width: fit-content;
+    height: fit-content;
+    right: 0;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #38a2e5;
+    background: none;
+    outline: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+  }
+
+  .buttonDisabled {
+    position: absolute;
+    width: fit-content;
+    height: fit-content;
+    right: 0;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #38a2e5;
+    background: none;
+    outline: none;
+    border: none;
+    font-size: 26px;
+    cursor: not-allowed;
+  }
+}
+
+.groupsCreate {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: end;
+  min-height: 50px;
+  overflow: hidden;
+
+  .createButton {
+    width: 50px;
+    height: 50px;
+    color: white;
+    background: none;
+    outline: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    background-color: #38a2e5;
+    border-radius: 50%;
+    z-index: 2;
+  }
+
+  .createInput {
+    position: absolute;
+    right: 30px;
+    height: 70%;
+    width: 200px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    background-color: transparent;
+    border: 1px solid #38a2e5;
+    border-radius: 5px;
+    color: white;
+    outline: none;
+    padding-left: 10px;
+    box-sizing: border-box;
+    font-size: 20px;
+    transition: all 0.3s ease;
+  }
+}

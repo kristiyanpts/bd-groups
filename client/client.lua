@@ -1,30 +1,19 @@
--- local function toggleNuiFrame(shouldShow)
---   SetNuiFocus(shouldShow, shouldShow)
---   SendReactMessage('setVisible', shouldShow)
--- end
+local function toggleNuiFrame(shouldShow)
+  SetNuiFocus(shouldShow, shouldShow)
+  SendReactMessage('setVisible', shouldShow)
+end
 
--- RegisterCommand('show-nui', function()
---   toggleNuiFrame(true)
---   debugPrint('Show NUI frame')
--- end)
+RegisterCommand('show-nui', function()
+  toggleNuiFrame(true)
+  SendReactMessage('refreshFeed')
+  debugPrint('Show NUI frame')
+end)
 
--- RegisterNUICallback('hideFrame', function(_, cb)
---   toggleNuiFrame(false)
---   debugPrint('Hide NUI frame')
---   cb({})
--- end)
-
--- RegisterNUICallback('getClientData', function(data, cb)
---   debugPrint('Data sent by React', json.encode(data))
-
--- -- Lets send back client coords to the React frame for use
---   local curCoords = GetEntityCoords(PlayerPedId())
-
---   local retData <const> = { x = curCoords.x, y = curCoords.y, z = curCoords.z }
---   cb(retData)
--- end)
-
--- * Credit to - https://github.com/Project-Sloth/ps-playergroups
+RegisterNUICallback('hideFrame', function(_, cb)
+  toggleNuiFrame(false)
+  debugPrint('Hide NUI frame')
+  cb({})
+end)
 
 CurrentJobStage = "WAITING"
 GroupId = -1
@@ -44,9 +33,9 @@ local function FindBlipByName(name)
   return false
 end
 
-RegisterNuiCallback('groups:get-status', function(_, cb)
+RegisterNuiCallback('fetchGroupStatus', function(_, cb)
   if GroupId then
-    local groupInfo = lib.callback.await('yseries:server:groups:get', false, GroupId)
+    local groupInfo = lib.callback.await('bd-groups:server:groups:get', false, GroupId)
 
     cb(groupInfo)
     return
@@ -55,9 +44,13 @@ RegisterNuiCallback('groups:get-status', function(_, cb)
   cb(nil)
 end)
 
-RegisterNuiCallback('groups:get-active', function(_, cb)
+RegisterNuiCallback('fetchMaxMembers', function(_, cb)
+  cb(Config.MaxMembers)
+end)
+
+RegisterNuiCallback('fetchGroups', function(_, cb)
   if GroupId then
-    local groups = lib.callback.await('yseries:server:groups:get-active', false)
+    local groups = lib.callback.await('bd-groups:server:groups:get-active', false)
 
     cb(groups)
     return
@@ -66,38 +59,38 @@ RegisterNuiCallback('groups:get-active', function(_, cb)
   cb(nil)
 end)
 
-RegisterNUICallback('groups:get-requests', function(groupId, cb)
-  local requests = lib.callback.await('yseries:server:groups:get-requests', false, groupId)
+RegisterNUICallback('fetchRequests', function(groupId, cb)
+  local requests = lib.callback.await('bd-groups:server:groups:get-requests', false, groupId)
 
   cb(requests)
 end)
 
-RegisterNuiCallback('groups:request-join', function(groupId, cb)
-  local send = lib.callback.await('yseries:server:groups:request-join', false, groupId)
+RegisterNuiCallback('requestJoin', function(groupId, cb)
+  local send = lib.callback.await('bd-groups:server:groups:request-join', false, groupId)
 
   cb(send)
 end)
 
-RegisterNuiCallback('groups:accept-join', function(data, cb)
-  local accepted = lib.callback.await('yseries:server:groups:accept-join', false, data)
+RegisterNuiCallback('acceptRequest', function(data, cb)
+  local accepted = lib.callback.await('bd-groups:server:groups:accept-join', false, data)
 
   cb(accepted)
 end)
 
-RegisterNuiCallback('groups:deny-join', function(data, cb)
-  local denied = lib.callback.await('yseries:server:groups:deny-join', false, data)
+RegisterNuiCallback('denyRequest', function(data, cb)
+  local denied = lib.callback.await('bd-groups:server:groups:deny-join', false, data)
 
   cb(denied)
 end)
 
-RegisterNuiCallback('groups:kick-member', function(playerId, cb)
-  local kicked = lib.callback.await('yseries:server:groups:kick-member', false, playerId, GroupId)
+RegisterNuiCallback('kickMember', function(playerId, cb)
+  local kicked = lib.callback.await('bd-groups:server:groups:kick-member', false, playerId, GroupId)
 
   cb(kicked)
 end)
 
-RegisterNuiCallback('groups:leave', function(groupId, cb)
-  TriggerServerEvent("yseries:server:groups:leave", groupId)
+RegisterNuiCallback('leaveGroup', function(groupId, cb)
+  TriggerServerEvent("bd-groups:server:groups:leave", groupId)
 
   CurrentJobStage = "WAITING"
   GroupId = -1
@@ -110,15 +103,15 @@ RegisterNuiCallback('groups:leave', function(groupId, cb)
   cb(true)
 end)
 
-RegisterNUICallback('groups:create', function(groupName, cb)
-  local groupInfo = lib.callback.await("yseries:server:groups:request-create", false, groupName)
+RegisterNUICallback('createGroup', function(groupName, cb)
+  local groupInfo = lib.callback.await("bd-groups:server:groups:request-create", false, groupName)
 
   if groupInfo?.groupId then
     CurrentJobStage = "WAITING"
     GroupId = groupInfo.groupId
     IsGroupLeader = true
 
-    local group = lib.callback.await('yseries:server:groups:get', false, GroupId)
+    local group = lib.callback.await('bd-groups:server:groups:get', false, GroupId)
 
     cb(group)
     return
@@ -127,7 +120,7 @@ RegisterNUICallback('groups:create', function(groupName, cb)
   cb(groupInfo)
 end)
 
-RegisterNetEvent("yseries:client:groups:remove-blip", function(name)
+RegisterNetEvent("bd-groups:client:groups:remove-blip", function(name)
   local i = FindBlipByName(name)
   if i then
     local blip = GroupBlips[i]["blip"]
@@ -137,14 +130,14 @@ RegisterNetEvent("yseries:client:groups:remove-blip", function(name)
   end
 end)
 
-RegisterNetEvent('yseries:client:groups:create-blip', function(name, data)
+RegisterNetEvent('bd-groups:client:groups:create-blip', function(name, data)
   if data == nil then
     debugPrint("Invalid Data was passed to the create blip event")
     return
   end
 
   if FindBlipByName(name) then
-    TriggerEvent("yseries:client:groups:remove-blip", name)
+    TriggerEvent("bd-groups:client:groups:remove-blip", name)
   end
 
   local blip = nil
@@ -185,45 +178,45 @@ RegisterNetEvent('yseries:client:groups:create-blip', function(name, data)
   GroupBlips[#GroupBlips + 1] = { name = name, blip = blip }
 end)
 
-RegisterNetEvent("yseries:client:groups:update-leader", function()
+RegisterNetEvent("bd-groups:client:groups:update-leader", function()
   IsGroupLeader = true
 
-  SendUIAction('groups:make-leader', true)
+  SendReactMessage('makeLeader')
 end)
 
-RegisterNetEvent('yseries:client:groups:update-group-data', function()
-  local groupInfo = lib.callback.await('yseries:server:groups:get', false, GroupId)
-  SendUIAction('groups:update-group-data', groupInfo)
+RegisterNetEvent('bd-groups:client:groups:update-group-data', function()
+  local groupInfo = lib.callback.await('bd-groups:server:groups:get', false, GroupId)
+  SendReactMessage('updateGroupData', groupInfo)
 end)
 
-RegisterNetEvent("yseries:client:groups:group-destroy", function()
+RegisterNetEvent("bd-groups:client:groups:group-destroy", function()
   CurrentJobStage = "WAITING"
   GroupId = -1
   IsGroupLeader = false
 end)
 
-RegisterNetEvent("yseries:client:groups:join", function(groupId)
+RegisterNetEvent("bd-groups:client:groups:join", function(groupId)
   GroupId = groupId
 
-  SendUIAction('groups:join-accepted', groupId)
+  SendReactMessage('joinAccepted')
 end)
 
-RegisterNetEvent("yseries:client:groups:remove-pending-join", function(groupId)
-  SendUIAction('groups:remove-pending-join', groupId)
+RegisterNetEvent("bd-groups:client:groups:remove-pending-join", function(groupId)
+  SendReactMessage('removePendingJoin')
 end)
 
-RegisterNetEvent('yseries:client:groups:get-remove-from-group', function()
-  SendUIAction('groups:get-remove-from-group')
+RegisterNetEvent('bd-groups:client:groups:get-remove-from-group', function()
+  SendReactMessage('getRemovedFromGroup')
 end)
 
-RegisterNetEvent('yseries:client:groups:update-job-stage', function(stage)
+RegisterNetEvent('bd-groups:client:groups:update-job-stage', function(stage)
   CurrentJobStage = stage
 
-  SendUIAction('groups:update-job-stage', stage)
+  SendReactMessage('updateJobStage', stage)
 end)
 
-RegisterNetEvent('yseries:client:groups:refresh-feed', function()
-  SendUIAction('groups:refresh-feed')
+RegisterNetEvent('bd-groups:client:groups:refresh-feed', function()
+  SendReactMessage('refreshFeed')
 end)
 
 -- * Exports
