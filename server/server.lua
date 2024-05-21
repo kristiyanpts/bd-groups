@@ -1,4 +1,3 @@
-local Core = exports["qb-core"]:GetCoreObject()
 local Groups = {}
 local Players = {}
 local Requests = {}
@@ -12,10 +11,7 @@ local notification = {
 }
 
 local function formatCharacterName(playerSource)
-    local Player = Core.Functions.GetPlayer(playerSource)
-    if not Player then return end
-
-    local firstName, lastName = Player.PlayerData.charinfo.firstname, Player.PlayerData.charinfo.lastname
+    local firstName, lastName = GetPlayerName(playerSource)
 
     return firstName .. " " .. lastName
 end

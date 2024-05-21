@@ -3,12 +3,6 @@ local function toggleNuiFrame(shouldShow)
   SendReactMessage('setVisible', shouldShow)
 end
 
-RegisterCommand('show-nui', function()
-  toggleNuiFrame(true)
-  SendReactMessage('refreshFeed')
-  debugPrint('Show NUI frame')
-end)
-
 RegisterNUICallback('hideFrame', function(_, cb)
   toggleNuiFrame(false)
   debugPrint('Hide NUI frame')
@@ -219,6 +213,10 @@ RegisterNetEvent('bd-groups:client:groups:refresh-feed', function()
   SendReactMessage('refreshFeed')
 end)
 
+RegisterNetEvent('bd-groups:client:send-notification', function(notifData)
+  Notify(notifData.text, "primary", notifData.time)
+end)
+
 -- * Exports
 -- Returns Client side job stage
 exports("GetJobStage", function()
@@ -234,3 +232,104 @@ end)
 exports("IsGroupLeader", function()
   return IsGroupLeader
 end)
+
+RegisterCommand('show-nui', function()
+  toggleNuiFrame(true)
+  SendReactMessage('refreshFeed')
+  debugPrint('Show NUI frame')
+end)
+
+if Config.ImportInPhone then
+  local key = "bd-groups"
+
+  CreateThread(function()
+    while GetResourceState(Config.Phone) ~= "started" do
+      Wait(500)
+    end
+
+    local function AddApp()
+      if Config.Phone == "yseries" then
+        local phoneResourceName = "yseries"
+
+        local dataLoaded = exports[phoneResourceName]:GetDataLoaded()
+        while not dataLoaded do
+          Wait(500)
+          dataLoaded = exports[phoneResourceName]:GetDataLoaded()
+        end
+
+
+        exports[phoneResourceName]:AddCustomApp({
+          key = key,
+          name = "Групи",
+          defaultApp = false,
+          ui = "https://cfx-nui-" .. GetCurrentResourceName() .. "/ui/build/index.html", -- built version
+          -- ui = "http://localhost:3000", -- dev version
+          icon = {
+            yos = "https://cdn-icons-png.flaticon.com/512/2314/2314912.png",    -- YPhone OS icon.
+            humanoid = "https://cdn-icons-png.flaticon.com/512/566/566312.png", -- YFlip OS icon.
+          },
+        })
+      elseif Config.Phone == "qs-smartphone-pro" then
+        local ui = 'https://cfx-nui-' .. GetCurrentResourceName() .. '/ui/build/'
+
+        exports[Config.Phone]:addCustomApp({
+          app = 'groups',
+          image = ui .. 'icon.png',
+          ui = ui .. 'index.html',
+          label = 'Groups',
+          job = false,
+          blockedJobs = {},
+          timeout = 5000,
+          creator = 'Quasar Store',
+          category = 'social',
+          isGame = false,
+          description = 'This is your first testing app, I hope you manage to create incredible things!',
+          age = '16+',
+          extraDescription = {
+            {
+              header = 'Test',
+              head = 'Test application',
+              image =
+              'https://media.istockphoto.com/photos/abstract-background-wallpaper-picture-id952039286?b=1&k=20&m=952039286&s=170667a&w=0&h=LmOcMt7FHxFUAr2bOSfTUPV9sQhME6ABtAYLM0cMkR4=',
+              footer = 'This is your first testing app, I hope you manage to create incredible things!'
+            }
+          }
+        })
+      else
+        debugPrint("Invalid phone type")
+      end
+    end
+
+    AddApp()
+
+    AddEventHandler("onResourceStart", function(resource)
+      if resource == Config.Phone then
+        AddApp()
+      end
+    end)
+
+    RegisterNuiCallback('get-nui-data', function(_, cb)
+      cb('I came from client.lua')
+    end)
+
+    AddEventHandler("onResourceStop", function(resource)
+      if resource == GetCurrentResourceName() then
+        if Config.Phone == "yseries" then
+          exports[Config.Phone]:RemoveCustomApp(key)
+        else
+          if Config.Phone == "qs-smartphone-pro" then
+            exports[Config.Phone]:removeCustomApp('groups')
+          else
+            debugPrint("Invalid phone type")
+          end
+        end
+      end
+    end)
+  end)
+else
+  RegisterCommand('groups', function()
+    toggleNuiFrame(true)
+    SendReactMessage('refreshFeed')
+    debugPrint('Show NUI frame')
+  end)
+end
