@@ -14,7 +14,7 @@ CreateThread(function()
             return Core.Functions.GetPlayer(source)?.PlayerData?.charinfo?.firstname,
                 Core.Functions.GetPlayer(source)?.PlayerData?.charinfo?.lastname
         elseif Config.Framework == "esx" then
-            return Core.GetPlayerData(source)?.firstname, Core.GetPlayerData(source)?.lastname
+            return Core.GetPlayerFromId(source)?.firstname, Core.GetPlayerFromId(source)?.lastname
         else
             debugPrint("Invalid framework specified in config.lua")
         end
